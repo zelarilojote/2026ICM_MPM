@@ -5,93 +5,66 @@ import os
 import logging
 
 class NSGARunner:
-    def __init__(self, algo, max_gen=100, verbose=True, log_dir="log"):
+    def __init__(self, algo, max_gen=100, verbose=True, log_dir="log", stage_tag="Stage"):
         self.algo = algo
         self.max_gen = max_gen
         self.verbose = verbose
         self.log_dir = log_dir
+        self.stage_tag = stage_tag
         
-        # 1. 自动创建日志目录
         if not os.path.exists(self.log_dir):
             os.makedirs(self.log_dir)
             
-        # 2. 配置日志记录器
         self.logger = self._setup_logging()
 
     def _setup_logging(self):
-        # 以当前时间命名日志文件
-        timestamp = time.strftime("%Y%m%d_%H%M%S")
-        log_file = os.path.join(self.log_dir, f"run_{timestamp}.log")
-        
-        logger = logging.getLogger("NSGARunner")
+        log_file = os.path.join(self.log_dir, f"run_{self.stage_tag}.log")
+        logger = logging.getLogger(f"NSGARunner_{self.stage_tag}")
         logger.setLevel(logging.INFO)
         
-        # 清除已有的 handler (防止重复打印)
         if logger.hasHandlers():
             logger.handlers.clear()
 
-        # 文件处理器 (写入 log 文件)
         file_handler = logging.FileHandler(log_file, encoding='utf-8')
-        file_formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
-        file_handler.setFormatter(file_formatter)
+        file_handler.setFormatter(logging.Formatter('%(asctime)s - %(message)s'))
         logger.addHandler(file_handler)
 
-        # 控制台处理器 (如果 verbose 为 True)
         if self.verbose:
             console_handler = logging.StreamHandler()
-            console_formatter = logging.Formatter('%(message)s') # 控制台保持简洁
-            console_handler.setFormatter(console_formatter)
+            console_handler.setFormatter(logging.Formatter('%(message)s'))
             logger.addHandler(console_handler)
-            
         return logger
 
     def run(self):
         start_time = time.time()
         self.logger.info("="*50)
-        self.logger.info(f"🚀 Runner started. Problem: {self.algo.prob.__class__.__name__}")
-        self.logger.info(f"Target Cargo: {self.algo.prob.target_cargo/1e6:.1f}M Tons | Max Gen: {self.max_gen}")
-        self.logger.info("="*50)
+        self.logger.info(f"🚀 {self.stage_tag} START. Target: {self.algo.prob.stage_mass} Tons")
         
         final_vals = None
         for g in range(1, self.max_gen + 1):
-            _, final_vals = self.algo.evolve()
+            pop, final_vals = self.algo.evolve()
             
-            if g % 20 == 0 or g == 1:
-                elapsed = time.time() - start_time
+            if g % 50 == 0 or g == 1:
                 min_cost = np.min(final_vals[:, 0])
-                # 同时记录到文件和屏幕
-                self.logger.info(f"Gen {g:3d}/{self.max_gen} | Min Cost: {min_cost:.4e} | Elapsed: {elapsed:.1f}s")
+                min_time = np.min(final_vals[:, 1])
+                self.logger.info(f"[{self.stage_tag}] Gen {g:3d} | Min Cost: {min_cost:.2e} | Min Time: {min_time:.2f}Y")
 
-        total_time = time.time() - start_time
-        self.logger.info("="*50)
-        self.logger.info(f"✅ Optimization Finished in {total_time:.2f}s")
-        self.logger.info(f"Final Pareto Solutions: {len(final_vals)}")
+        elapsed = time.time() - start_time
+        self.logger.info(f"✅ {self.stage_tag} COMPLETED in {elapsed:.1f}s")
         
-        # 保存最后一代的数据快照 (CSV)
-        self._save_results(final_vals)
-        
-        self.plot_pareto(final_vals)
+        self.plot_pareto(final_vals, self.stage_tag)
         return self.algo.population, final_vals
 
-    def _save_results(self, vals):
-        """将最终的帕累托前沿值存入文本，方便论文引用"""
-        res_file = os.path.join(self.log_dir, f"pareto_results_{time.strftime('%H%M%S')}.csv")
-        np.savetxt(res_file, vals, delimiter=",", header="Cost,TimeRisk,Smoothness", comments='')
-        self.logger.info(f"💾 Final values saved to {res_file}")
-
-    def plot_pareto(self, vals):
+    def plot_pareto(self, vals, tag):
         plt.figure(figsize=(10, 6))
-        # 绘制散点图，颜色映射到平滑度（第三个目标）
-        sc = plt.scatter(vals[:, 0], vals[:, 1], c=vals[:, 2], cmap='viridis', alpha=0.7)
-        plt.colorbar(sc, label='Timeline Smoothness (Lower is Better)')
+        # 转换坐标轴单位：万美元 -> 亿美元 (可选)
+        plt.scatter(vals[:, 0], vals[:, 1], c='blue', alpha=0.6, edgecolors='k')
         
-        plt.title('Final Pareto Front: Multi-Stage Integration')
-        plt.xlabel('Adjusted Economic Cost (Phase-weighted)')
-        plt.ylabel('Adjusted Time Efficiency Index')
-        plt.grid(True, linestyle='--', alpha=0.6)
+        plt.title(f'Pareto Front: Economic vs Time ({tag})')
+        plt.xlabel('Total Economic Cost (Wan USD)')
+        plt.ylabel('Total Time Duration (Years)')
+        plt.grid(True, linestyle='--', alpha=0.5)
         
-        # 自动保存图片
-        img_path = os.path.join(self.log_dir, f"pareto_plot_{time.strftime('%H%M%S')}.png")
+        img_path = os.path.join(self.log_dir, f"pareto_{tag}.png")
         plt.savefig(img_path)
-        self.logger.info(f"📊 Pareto plot saved to {img_path}")
-        plt.show()
+        plt.close() # 必须关闭，防止下一次绘图重叠

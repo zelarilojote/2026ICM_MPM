@@ -1,11 +1,20 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import numpy as np
 
 class NSGA2:
     def __init__(self, problem, pop_size=100):
         self.prob = problem
         self.pop_size = pop_size
-        self.population = np.random.uniform(self.prob.bounds[0], self.prob.bounds[1], (pop_size, self.prob.dim))
+        
+        # 解析边界: 假设 problem.bounds 是 [low_array, high_array]
+        self.low_b = self.prob.bounds[0]
+        self.high_b = self.prob.bounds[1]
+        
+        # 初始化种群：在每个维度的边界内生成
+        self.population = np.random.uniform(
+            self.low_b, self.high_b, (pop_size, self.prob.dim)
+        )
 
     def _dominates(self, p_val, q_val):
         return all(p_val <= q_val) and any(p_val < q_val)
@@ -47,16 +56,23 @@ class NSGA2:
         return dist
 
     def evolve(self):
-        # 变异与交叉生成子代
         offspring = []
         while len(offspring) < self.pop_size:
-            p = self.population[np.random.choice(self.pop_size, 2, replace=False)]
-            # 简单单点交叉
-            pt = np.random.randint(1, self.prob.dim)
-            c = np.concatenate((p[0][:pt], p[1][pt:]))
-            # 变异
-            mask = np.random.rand(self.prob.dim) < 0.1
-            c[mask] = np.random.uniform(self.prob.bounds[0], self.prob.bounds[1], np.sum(mask))
+            # 锦标赛选择
+            idx1, idx2 = np.random.choice(self.pop_size, 2, replace=False)
+            p = self.population[[idx1, idx2]]
+            
+            # 单点交叉
+            pt = np.random.randint(1, self.prob.dim) if self.prob.dim > 1 else 0
+            c = np.copy(p[0])
+            if self.prob.dim > 1:
+                c[pt:] = p[1][pt:]
+            
+            # 变异: 每个维度独立应用其边界
+            mask = np.random.rand(self.prob.dim) < 0.2 # 提高变异率增加多样性
+            for i in range(self.prob.dim):
+                if mask[i]:
+                    c[i] = np.random.uniform(self.low_b[i], self.high_b[i])
             offspring.append(c)
         
         combined_pop = np.vstack((self.population, offspring))
@@ -67,7 +83,8 @@ class NSGA2:
         for f in fronts:
             cd = self._crowding_distance(f, combined_vals)
             if len(new_pop) + len(f) <= self.pop_size:
-                new_pop.extend(combined_pop[f]); new_vals.extend(combined_vals[f])
+                new_pop.extend(combined_pop[f])
+                new_vals.extend(combined_vals[f])
             else:
                 idx = np.argsort(-cd)[:self.pop_size - len(new_pop)]
                 new_pop.extend(combined_pop[[f[i] for i in idx]])

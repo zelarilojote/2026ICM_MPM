@@ -1,0 +1,24 @@
+2026-02-01 00:01:30,321 - ==================================================
+2026-02-01 00:01:30,321 - 🚀 Stage_1_Core START. Target: 50000000.0 Tons
+2026-02-01 00:01:30,500 - [Stage_1_Core] Gen   1 | Min Cost: 1.63e+08 | Min Time: 8.47Y
+2026-02-01 00:01:37,925 - [Stage_1_Core] Gen  50 | Min Cost: 1.69e+07 | Min Time: 8.32Y
+2026-02-01 00:01:45,533 - [Stage_1_Core] Gen 100 | Min Cost: 1.69e+07 | Min Time: 8.32Y
+2026-02-01 00:01:53,291 - [Stage_1_Core] Gen 150 | Min Cost: 1.57e+07 | Min Time: 8.32Y
+2026-02-01 00:02:01,264 - [Stage_1_Core] Gen 200 | Min Cost: 1.57e+07 | Min Time: 8.32Y
+2026-02-01 00:02:01,276 - ✅ Stage_1_Core COMPLETED in 31.0s
+2026-02-01 00:17:57,982 - ==================================================
+2026-02-01 00:17:57,983 - 🚀 Stage_1_Core START. Target: 50000000.0 Tons
+2026-02-01 00:17:58,154 - [Stage_1_Core] Gen   1 | Min Cost: 5.33e+07 | Min Time: 8.62Y
+2026-02-01 00:18:05,569 - [Stage_1_Core] Gen  50 | Min Cost: 2.46e+07 | Min Time: 8.32Y
+2026-02-01 00:18:13,079 - [Stage_1_Core] Gen 100 | Min Cost: 2.46e+07 | Min Time: 8.32Y
+2026-02-01 00:18:20,669 - [Stage_1_Core] Gen 150 | Min Cost: 1.73e+07 | Min Time: 8.32Y
+2026-02-01 00:18:28,274 - [Stage_1_Core] Gen 200 | Min Cost: 1.73e+07 | Min Time: 8.32Y
+2026-02-01 00:18:28,275 - ✅ Stage_1_Core COMPLETED in 30.3s
+2026-02-01 00:20:30,075 - ==================================================
+2026-02-01 00:20:30,076 - 🚀 Stage_1_Core START. Target: 50000000.0 Tons
+2026-02-01 00:20:30,271 - [Stage_1_Core] Gen   1 | Min Cost: 5.04e+08 | Min Time: 8.65Y
+2026-02-01 00:20:38,112 - [Stage_1_Core] Gen  50 | Min Cost: 5.04e+08 | Min Time: 8.32Y
+2026-02-01 00:20:45,945 - [Stage_1_Core] Gen 100 | Min Cost: 5.04e+08 | Min Time: 8.32Y
+2026-02-01 00:20:53,785 - [Stage_1_Core] Gen 150 | Min Cost: 5.04e+08 | Min Time: 8.32Y
+2026-02-01 00:21:02,308 - [Stage_1_Core] Gen 200 | Min Cost: 5.04e+08 | Min Time: 8.32Y
+2026-02-01 00:21:02,309 - ✅ Stage_1_Core COMPLETED in 32.2s
