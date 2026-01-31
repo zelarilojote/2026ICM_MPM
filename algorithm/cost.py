@@ -174,34 +174,3 @@ def calculate_total_costs(
     total_economic_cost = annual_economic_cost * total_time_cost
     
     return total_economic_cost, total_time_cost
-
-
-if __name__ == "__main__":
-    # 示例：总重量10000吨，太空电梯利用率80%，火箭年发射50次
-    economic_cost, time_cost = calculate_total_costs(
-        total_mass=10000.0,
-        elevator_utilization=0.8,
-        rocket_launch_frequency=365
-    )
-    
-    print(f"总经济成本: {economic_cost:.2f} 万美元")
-    print(f"总时间成本: {time_cost:.4f} 年")
-    
-    # 查看火箭成本明细
-    rocket_calc = RocketCostCalculator()
-    rocket_detail = rocket_calc.calculate_economic_cost(365)
-    print(f"\n火箭年度成本明细:")
-    print(f"  发射成本: {rocket_detail['launch_cost_per_year']:.2f} 万美元")
-    print(f"  维护成本: {rocket_detail['maintenance_cost_per_year']:.2f} 万美元")
-    print(f"  总成本: {rocket_detail['total_cost_per_year']:.2f} 万美元")
-    print(f"  年运输能力: {rocket_calc.get_annual_capacity(365):.2f} 吨")
-    
-    # 查看太空电梯成本明细
-    elevator_calc = ElevatorCostCalculator()
-    detail = elevator_calc.calculate_economic_cost(0.8)
-    print(f"\n太空电梯年度成本明细:")
-    print(f"  能源成本: {detail['energy_cost_per_year']:.2f} 万美元")
-    print(f"  维护成本: {detail['maintenance_cost_per_year']:.2f} 万美元")
-    print(f"  人工成本: {detail['labor_cost_per_year']:.2f} 万美元")
-    print(f"  总成本: {detail['total_cost_per_year']:.2f} 万美元")
-    print(f"  年运输能力: {elevator_calc.get_annual_capacity(0.8):.2f} 吨")

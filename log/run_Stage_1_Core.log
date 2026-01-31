@@ -22,3 +22,11 @@
 2026-02-01 00:20:53,785 - [Stage_1_Core] Gen 150 | Min Cost: 5.04e+08 | Min Time: 8.32Y
 2026-02-01 00:21:02,308 - [Stage_1_Core] Gen 200 | Min Cost: 5.04e+08 | Min Time: 8.32Y
 2026-02-01 00:21:02,309 - ✅ Stage_1_Core COMPLETED in 32.2s
+2026-02-01 00:42:46,618 - ==================================================
+2026-02-01 00:42:46,619 - 🚀 Stage_1_Core START. Target: 50000000.0 Tons
+2026-02-01 00:42:46,793 - [Stage_1_Core] Gen   1 | Min Cost: 4.90e+08 | Min Time: 9.13Y
+2026-02-01 00:42:54,082 - [Stage_1_Core] Gen  50 | Min Cost: 4.47e+08 | Min Time: 9.13Y
+2026-02-01 00:43:01,339 - [Stage_1_Core] Gen 100 | Min Cost: 4.47e+08 | Min Time: 9.13Y
+2026-02-01 00:43:08,588 - [Stage_1_Core] Gen 150 | Min Cost: 4.47e+08 | Min Time: 9.13Y
+2026-02-01 00:43:15,849 - [Stage_1_Core] Gen 200 | Min Cost: 4.40e+08 | Min Time: 9.13Y
+2026-02-01 00:43:15,850 - ✅ Stage_1_Core COMPLETED in 29.2s
