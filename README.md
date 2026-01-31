@@ -1,2 +1,0 @@
-# 2026ICM_MPM
-2026 ICM problem B
