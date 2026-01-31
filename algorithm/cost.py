@@ -1,8 +1,3 @@
-"""
-火箭与太空电梯经济成本及运输时间成本计算模块
-输入：太空电梯年利用率、火箭发射频率
-"""
-
 import numpy as np
 from dataclasses import dataclass
 from typing import Dict, Tuple
@@ -129,7 +124,7 @@ class ElevatorCostCalculator:
         energy_cost = self.calculate_energy_cost(annual_mass)
         maintenance_cost = self.calculate_maintenance_cost(annual_mass)
         labor_cost = self.calculate_labor_cost(annual_mass)
-        total_cost = energy_cost + maintenance_cost + labor_cost
+        total_cost = (energy_cost ** 2)  + maintenance_cost + labor_cost
         
         return {
             'energy_cost_per_year': energy_cost,
