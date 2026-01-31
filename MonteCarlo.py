@@ -20,16 +20,16 @@ CONFIG = {
     "SIMULATION_RUNS": 2000,  # 模拟次数
     
     # 风险1: 太空电梯的不完美
-    "SE_EFFICIENCY_MEAN": 0.95,
-    "SE_EFFICIENCY_STD": 0.05,
-    "SE_FAILURE_PROB": 0.02,
-    "SE_REPAIR_TIME": 0.5,
+    "SE_EFFICIENCY_MEAN": 0.95, # 天气影响平均效率
+    "SE_EFFICIENCY_STD": 0.05, # 天气影响标准差
+    "SE_FAILURE_PROB": 0.02, # 故障概率
+    "SE_REPAIR_TIME": 0.5, # 维修时间占比
     "SE_REPAIR_COST": 5e8,  # 维修费用（美元）
     
     # 风险2: 火箭发射失败
-    "ROCKET_FAILURE_RATE": 0.01,
-    "ROCKET_GROUNDING_TIME": 0.25,
-    "ROCKET_FAILURE_COST_MULTIPLIER": 5.0,
+    "ROCKET_FAILURE_RATE": 0.01, # 失败率
+    "ROCKET_GROUNDING_TIME": 0.25, # 停飞时间占比
+    "ROCKET_FAILURE_COST_MULTIPLIER": 5.0, # 失败成本倍数
 }
 
 # ==========================================
