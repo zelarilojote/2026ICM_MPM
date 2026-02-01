@@ -2,6 +2,8 @@
 __pycache__/
 *.py[cod]
 *$py.class
+algorithm/__pycache__/
+problem/__pycache__/
 
 # 忽略虚拟环境文件夹
 venv/
@@ -12,6 +14,7 @@ lib/
 
 # 忽略 logs 文件夹下的所有内容
 logs/
+log/
 
 # 忽略 IDE 配置文件
 .vscode/
@@ -21,3 +24,4 @@ logs/
 # 忽略临时文件
 *.tmp
 *.bak
+
