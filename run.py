@@ -27,9 +27,9 @@ def main():
     # --- 1. 定义三个阶段的参数 ---
     # 你可以根据实际模型调整任务重量
     stage_configs = [
-        {"mass": 5e7, "priority": "time",     "tag": "Stage_1_Core"},
-        {"mass": 4e7, "priority": "balanced", "tag": "Stage_2_Expand"},
-        {"mass": 3e7, "priority": "cost",     "tag": "Stage_3_Sustain"}
+        {"mass": 2e7, "priority": "time",     "tag": "Stage_1_Core"},
+        {"mass": 6e7, "priority": "balanced", "tag": "Stage_2_Expand"},
+        {"mass": 2e7, "priority": "cost",     "tag": "Stage_3_Sustain"}
     ]
     
     summary_results = []

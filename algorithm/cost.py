@@ -19,12 +19,14 @@ class RocketParams:
     N_sites: int = 10                         # 发射场数量
     N_plat: int = 10                           # 每个发射场的发射台数量
     maintenance_cost_per_year: float = 200.0  # 年维护成本（万美元）
+    alpha: float = 0.002                         # 大量发射折扣系数
+    lambda_: float = 0.999                 # 发射价格折扣系数
 
 
 @dataclass
 class ElevatorParams:
     """太空电梯参数配置"""
-    C_repair_per_kg: float = 0.5              # 单位质量维修成本（美元/千克）
+    C_repair_per_kg: float = 500              # 单位质量维修成本（美元/千克）
     C_labor_per_ton: float = 100.0            # 单位质量人工成本（美元/吨）
     max_capacity_year: float = 179000.0       # 年最大运输能力（吨）
     maintenance_cost_per_year: float = 500.0  # 年固定维护成本（万美元）
@@ -47,8 +49,12 @@ class RocketCostCalculator:
         Args:
             launch_frequency: 每发射台每年发射次数
         """
-        total_launches = launch_frequency * self.params.N_sites * self.params.N_plat
-        launch_cost = total_launches * self.params.C_rock
+        total_launches = launch_frequency * self.params.N_sites * self.params.N_plat * (1.0 /(1.0 + self.params.alpha * launch_frequency))
+        # print(f"Debug: launch_frequency={launch_frequency}, facteur={1.0 /(1.0 + self.params.alpha * launch_frequency)}")
+        # 加入折扣因素
+        discount = max(self.params.lambda_ ** (total_launches / 100), 0.6)
+        #print(f"Debug: total_launches={total_launches}, discount={discount}")
+        launch_cost = total_launches * self.params.C_rock * discount
         maintenance_cost = self.params.maintenance_cost_per_year
         total_cost = launch_cost + maintenance_cost
         
@@ -60,7 +66,7 @@ class RocketCostCalculator:
     
     def get_annual_capacity(self, launch_frequency: int) -> float:
         """获取火箭年运输能力（吨）"""
-        total_launches = launch_frequency * self.params.N_sites * self.params.N_plat
+        total_launches = launch_frequency * self.params.N_sites * self.params.N_plat * (1.0 /(1.0 + self.params.alpha * launch_frequency))
         return total_launches * self.params.M_rock
 
 
@@ -78,19 +84,22 @@ class ElevatorCostCalculator:
         energy_j = G * M_EARTH * mass_kg * (1/R_EARTH - 1/R_GEO)
         return energy_j
     
-    def calculate_energy_cost(self, mass_tons: float) -> float:
+    def calculate_energy_cost(self, mass_tons: float, utilization_rate: float) -> float:
         """计算能源成本（万美元）"""
         mass_kg = mass_tons * 1000
         energy_j = self.calculate_ideal_energy(mass_kg)
-        energy_actual_j = energy_j / self.params.eta  # 实际能耗 = 理想能耗 / 效率
+        efficiency = min(self.params.eta ,np.exp(-utilization_rate))
+        # print(f"Debug: mass_kg={mass_kg}, energy_j={energy_j}, efficiency={efficiency}")
+        energy_actual_j = energy_j / efficiency  # 实际能耗 = 理想能耗 / 效率
         energy_kwh = energy_actual_j * J_TO_KWH
         cost_usd = energy_kwh * p_e
         return cost_usd / 10000  # 转万美元
     
-    def calculate_maintenance_cost(self, mass_tons: float) -> float:
+    def calculate_maintenance_cost(self, mass_tons: float, utilization_rate: float) -> float:
         """计算维护成本（万美元）"""
         mass_kg = mass_tons * 1000
-        variable_cost_usd = mass_kg * self.params.mu * self.params.C_repair_per_kg
+        variable_cost_usd = mass_kg * (self.params.mu * np.exp(utilization_rate) * self.params.C_repair_per_kg)
+        # print(f"Debug: facteur={self.params.mu * np.exp(utilization_rate)}, mass_kg={mass_kg}, variable_cost_usd={variable_cost_usd}")
         variable_cost_wan = variable_cost_usd / 10000
         fixed_cost_wan = self.params.maintenance_cost_per_year + self.params.C_supervision_per_year
         return variable_cost_wan + fixed_cost_wan
@@ -121,10 +130,10 @@ class ElevatorCostCalculator:
         """
         annual_mass = self.params.max_capacity_year * utilization_rate  # 吨
         
-        energy_cost = self.calculate_energy_cost(annual_mass)
-        maintenance_cost = self.calculate_maintenance_cost(annual_mass)
+        energy_cost = self.calculate_energy_cost(annual_mass, utilization_rate)
+        maintenance_cost = self.calculate_maintenance_cost(annual_mass, utilization_rate)
         labor_cost = self.calculate_labor_cost(annual_mass)
-        total_cost = (energy_cost ** 2)  + maintenance_cost + labor_cost
+        total_cost = energy_cost + maintenance_cost + labor_cost
         
         return {
             'energy_cost_per_year': energy_cost,
@@ -180,7 +189,7 @@ if __name__ == "__main__":
     # 示例：总重量10000吨，太空电梯利用率80%，火箭年发射50次
     economic_cost, time_cost = calculate_total_costs(
         total_mass=10000.0,
-        elevator_utilization=0.8,
+        elevator_utilization=1.0,
         rocket_launch_frequency=365
     )
     
@@ -198,10 +207,10 @@ if __name__ == "__main__":
     
     # 查看太空电梯成本明细
     elevator_calc = ElevatorCostCalculator()
-    detail = elevator_calc.calculate_economic_cost(0.8)
+    detail = elevator_calc.calculate_economic_cost(1.0)
     print(f"\n太空电梯年度成本明细:")
     print(f"  能源成本: {detail['energy_cost_per_year']:.2f} 万美元")
     print(f"  维护成本: {detail['maintenance_cost_per_year']:.2f} 万美元")
     print(f"  人工成本: {detail['labor_cost_per_year']:.2f} 万美元")
     print(f"  总成本: {detail['total_cost_per_year']:.2f} 万美元")
-    print(f"  年运输能力: {elevator_calc.get_annual_capacity(0.8):.2f} 吨")
+    print(f"  年运输能力: {elevator_calc.get_annual_capacity(1.0):.2f} 吨")
