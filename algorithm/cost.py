@@ -124,7 +124,7 @@ class ElevatorCostCalculator:
         energy_cost = self.calculate_energy_cost(annual_mass)
         maintenance_cost = self.calculate_maintenance_cost(annual_mass)
         labor_cost = self.calculate_labor_cost(annual_mass)
-        total_cost = (energy_cost ** 2)  + maintenance_cost + labor_cost
+        total_cost = energy_cost + maintenance_cost + (labor_cost** 2)
         
         return {
             'energy_cost_per_year': energy_cost,
@@ -138,39 +138,3 @@ class ElevatorCostCalculator:
         return self.params.max_capacity_year * utilization_rate * self.params.num_sites_elev
 
 
-def calculate_total_costs(
-    total_mass: float,
-    elevator_utilization: float,
-    rocket_launch_frequency: int,
-    rocket_params: RocketParams = None,
-    elevator_params: ElevatorParams = None
-) -> Tuple[float, float]:
-    """
-    计算总经济成本和总时间成本
-    
-    Args:
-        total_mass: 总运输重量（吨）
-        elevator_utilization: 太空电梯年利用率 (0.0 ~ 1.0)
-        rocket_launch_frequency: 火箭年发射频率（次/年/发射台）
-    
-    Returns:
-        (总经济成本（万美元）, 总时间成本（年）)
-    """
-    rocket_calc = RocketCostCalculator(rocket_params)
-    elevator_calc = ElevatorCostCalculator(elevator_params)
-    
-    # 年度经济成本
-    rocket_economic = rocket_calc.calculate_economic_cost(rocket_launch_frequency)['total_cost_per_year']
-    elevator_economic = elevator_calc.calculate_economic_cost(elevator_utilization)['total_cost_per_year']
-    annual_economic_cost = rocket_economic + elevator_economic
-    
-    # 总时间成本 = 总重量 / (火箭年运输量 + 电梯年运输量)
-    rocket_capacity = rocket_calc.get_annual_capacity(rocket_launch_frequency)
-    elevator_capacity = elevator_calc.get_annual_capacity(elevator_utilization)
-    total_capacity = rocket_capacity + elevator_capacity
-    total_time_cost = total_mass / total_capacity if total_capacity > 0 else float('inf')
-    
-    # 总经济成本 = 年度成本 × 运输年数
-    total_economic_cost = annual_economic_cost * total_time_cost
-    
-    return total_economic_cost, total_time_cost
