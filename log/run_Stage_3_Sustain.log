@@ -22,3 +22,11 @@
 2026-02-01 00:21:59,333 - [Stage_3_Sustain] Gen 150 | Min Cost: 3.02e+08 | Min Time: 4.99Y
 2026-02-01 00:22:07,375 - [Stage_3_Sustain] Gen 200 | Min Cost: 3.02e+08 | Min Time: 4.99Y
 2026-02-01 00:22:07,376 - ✅ Stage_3_Sustain COMPLETED in 32.1s
+2026-02-01 00:43:46,470 - ==================================================
+2026-02-01 00:43:46,470 - 🚀 Stage_3_Sustain START. Target: 30000000.0 Tons
+2026-02-01 00:43:46,637 - [Stage_3_Sustain] Gen   1 | Min Cost: 2.67e+08 | Min Time: 5.49Y
+2026-02-01 00:43:53,955 - [Stage_3_Sustain] Gen  50 | Min Cost: 2.62e+08 | Min Time: 5.47Y
+2026-02-01 00:44:01,530 - [Stage_3_Sustain] Gen 100 | Min Cost: 2.62e+08 | Min Time: 5.47Y
+2026-02-01 00:44:09,931 - [Stage_3_Sustain] Gen 150 | Min Cost: 2.62e+08 | Min Time: 5.47Y
+2026-02-01 00:44:17,512 - [Stage_3_Sustain] Gen 200 | Min Cost: 2.62e+08 | Min Time: 5.47Y
+2026-02-01 00:44:17,512 - ✅ Stage_3_Sustain COMPLETED in 31.0s
