@@ -5,11 +5,18 @@
 ## run in seperate way
 
 ```bash
-python run.py --mode separate --pop-size 120 --max-gen 200
+python run.py --mode separate --pop 120 --gen 200
 ```
 
 ## run in integrated way
 
 ```bash
-python run.py --mode separate --stage-masses 2e7,6e7,2e7 --priorities time,balanced,cost
+python run.py --mode integrated --pop 150 --gen 300
+python run.py --mode integrated --smooth --pop 150 --gen 300
+```
+
+## run with enironmental cost
+
+```bash
+python run.py --mode separate --with-env --pop 120 --gen 200
 ```

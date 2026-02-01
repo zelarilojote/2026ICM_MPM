@@ -1,26 +1,24 @@
 import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D 
 import numpy as np
-import time
 import os
 import logging
-from algorithm.cost import calculate_total_costs # 导入物理计算函数
+import json
+from datetime import datetime
+from algorithm.nsga import NSGA2
+from problem.problem_noenv import LunarLogisticsProblem
+from problem.problem_env import LunarLogisticsProblem_env
+from problem.integrated_problem import IntegratedLunarProblem
 
 class NSGARunner:
-    def __init__(self, algo, max_gen=100, log_dir="log", stage_tag="Stage", integrated=False, priority="balanced"):
-        self.algo = algo
-        self.max_gen = max_gen
-        self.log_dir = log_dir
-        self.stage_tag = stage_tag
-        self.integrated = integrated
-        self.priority = priority # 新增：决策偏好
-        
-        if not os.path.exists(self.log_dir):
-            os.makedirs(self.log_dir)
-        self.logger = self._setup_logging()
+    def __init__(self, log_dir="logs", with_env=False):
+        self.with_env = with_env
+        self.base_log_dir = log_dir
+        if not os.path.exists(self.base_log_dir):
+            os.makedirs(self.base_log_dir)
 
-    def _setup_logging(self):
-        name = f"{self.stage_tag}_int" if self.integrated else self.stage_tag
-        logger = logging.getLogger(f"NSGARunner_{name}")
+    def _setup_logger(self, log_path):
+        logger = logging.getLogger(log_path)
         if not logger.handlers:
             logger.setLevel(logging.INFO)
             handler = logging.StreamHandler()
@@ -28,99 +26,174 @@ class NSGARunner:
             logger.addHandler(handler)
         return logger
 
-    def _select_best(self, pop, vals):
-        """内部实现：归一化选点逻辑"""
+    def execute_strategy(self, mode, configs, pop_size=None, max_gen=None, smooth=False, priority="balanced"):
+        """
+        核心集成方法：封装了从问题实例化到结果打印的全过程
+        """
+        # 1. 创建本次实验的独立文件夹
+        timestamp = datetime.now().strftime('%m%d_%H%M')
+        run_dir = os.path.join(self.base_log_dir, f"{mode}_{'env' if self.with_env else 'std'}_{timestamp}")
+        os.makedirs(run_dir, exist_ok=True)
+        logger = self._setup_logger(os.path.join(run_dir, "run.log"))
+
+        # 2. 内部逻辑调度
+        results = []
+        if mode == 'integrated':
+            p_size = pop_size or 150
+            m_gen = max_gen or 300
+            self.prob = IntegratedLunarProblem(stage_masses=[c['mass'] for c in configs], smooth=smooth)
+            algo = NSGA2(self.prob, pop_size=p_size, integrated=True)
+            results = self._run_core(algo, m_gen, run_dir, "Global", True, priority, logger)
+        else:
+            p_size = pop_size or 100
+            m_gen = max_gen or 200
+            for conf in configs:
+                self.prob = LunarLogisticsProblem_env(stage_mass=conf['mass']) if self.with_env else LunarLogisticsProblem(stage_mass=conf['mass'])
+                algo = NSGA2(self.prob, pop_size=p_size)
+                # 分步模式下每个阶段追加结果
+                res = self._run_core(algo, m_gen, run_dir, conf['tag'], False, conf['priority'], logger)
+                results.extend(res)
+
+        self._print_summary(results, mode, logger)
+        return results
+
+    def _run_core(self, algo, max_gen, run_dir, tag, integrated, priority, logger):
+        """核心演化与还原逻辑"""
+        logger.info(f"🚀 Running {tag}...")
+        for g in range(1, max_gen + 1):
+            pop, vals = algo.evolve()
+            if g % 50 == 0:
+                logger.info(f"  Gen {g:3d} | Econ: {np.min(vals[:,0]):.2e} | Time: {np.min(vals[:,1]):.2f}")
+
+        # 绘图
+        self._plot_pareto(vals, run_dir, tag)
+        
+        # 选点
+        best_x = self._select_best(pop, vals, priority)
+        
+        # 还原
+        if integrated:
+            self._plot_roadmap(best_x, run_dir, tag)
+            return self._recover_data_integrated(self.prob.stage_masses, best_x)
+        else:
+            return self._recover_data_single(best_x, tag)
+
+    def _select_best(self, pop, vals, priority):
         min_v, max_v = vals.min(axis=0), vals.max(axis=0)
         norm_v = (vals - min_v) / (max_v - min_v + 1e-6)
-        weights = {"time": [0.2, 0.8], "balanced": [0.5, 0.5], "cost": [0.8, 0.2]}
-        w = np.array(weights.get(self.priority, [0.5, 0.5]))
+        n_objs = vals.shape[1]
+        
+        if self.with_env and n_objs >= 3:
+            w_map = {"time": [0.1, 0.7, 0.2], "balanced": [0.33, 0.33, 0.34], "cost": [0.7, 0.1, 0.2]}
+        else:
+            w_map = {"time": [0.2, 0.8], "balanced": [0.5, 0.5], "cost": [0.8, 0.2]}
+            norm_v = norm_v[:, :2]
+            
+        w = np.array(w_map.get(priority, w_map["balanced"]))
         return pop[np.argmin(np.dot(norm_v, w))]
 
-    def run(self):
-        """
-        核心流程：演化 -> 绘制全局 Pareto -> 选点 -> 还原物理指标 -> 绘制 Roadmap
-        """
-        self.logger.info(f"🚀 {'INTEGRATED' if self.integrated else 'PHASED'} START | Tag: {self.stage_tag}")
-        
-        # 1. 执行演化循环
-        pop, vals = None, None
-        for g in range(1, self.max_gen + 1):
-            pop, vals = self.algo.evolve()
-            if g % 50 == 0:
-                self.logger.info(f"  Gen {g:3d} | Min Econ: {np.min(vals[:,0]):.2e} | Min Time: {np.min(vals[:,1]):.2f}")
-
-        # 2. 绘制全局 Pareto 前沿图 (无论是否集成都画)
-        # 这张图展示了 6 维决策空间在【总成本/总时间】上的投影
-        self.plot_pareto(vals)
-
-        # 3. 战略选点
-        # 基于你传入的 priority (time/balanced/cost) 自动选出最优个体
-        best_x = self._select_best(pop, vals)
-        
-        # 4. 物理指标还原与结果封装
-        results = []
-        if self.integrated:
-            # 自动解析 6 维变量，调用物理计算器还原每个阶段的真实 Cost 和 Years
-            results = self._recover_physical_data(best_x)
-            # 绘制 Roadmap (展示选中的这个点的各阶段频率/利用率)
-            self.plot_integrated_roadmap(best_x)
+    # --- 辅助方法：物理还原 ---
+    def _recover_data_single(self, x, tag):
+        if self.with_env:
+            econ, duration, env = self.prob.evaluate(x)
+            return [{"tag": tag, "rf": x[0], "eu": x[1], "cost": econ, "duration": duration, "env": env}]
         else:
-            # 2 维单阶段还原
-            results = self._recover_physical_data_single(best_x)
-
-        return results
-
-    def plot_pareto(self, vals):
-        plt.figure(figsize=(8, 5))
-        plt.scatter(vals[:, 0], vals[:, 1], alpha=0.5)
-        plt.title(f"Pareto Front - {self.stage_tag}")
-        plt.xlabel("Total Economic Cost (USD)")
-        plt.ylabel("Total Duration (Years)")
-        plt.savefig(os.path.join(self.log_dir, f"pareto_{self.stage_tag}.png"))
-        plt.close()
-
-    def plot_integrated_roadmap(self, best_x):
-        fig, ax1 = plt.subplots(figsize=(10, 5))
-        stages = ['P1', 'P2', 'P3']
-        ax1.bar(stages, [best_x[0], best_x[2], best_x[4]], color='skyblue', label='Rocket')
-        ax2 = ax1.twinx()
-        ax2.plot(stages, [best_x[1], best_x[3], best_x[5]], 'r-o', label='Elevator')
-        ax2.set_ylim(0, 1.1)
-        plt.savefig(os.path.join(self.log_dir, f"roadmap_{self.stage_tag}.png"))
-        plt.close()
+            econ, duration = self.prob.evaluate(x)
+            return [{"tag": tag, "rf": x[0], "eu": x[1], "cost": econ, "duration": duration}]
         
-    def _recover_physical_data_single(self, best_x):
-        """单阶段模式：将 2 维解还原为物理指标"""
-        rf, eu = best_x[0], best_x[1]
-        mass = self.algo.prob.stage_mass # 读取该阶段的任务量
-        
-        # 调用物理计算器还原
-        econ, duration = calculate_total_costs(mass, eu, rf)
-        
-        return [{
-            "tag": self.stage_tag,
-            "rf": rf,
-            "eu": eu,
-            "cost": econ,
-            "duration": duration
-        }]
 
-    def _recover_physical_data(self, best_x):
-        """集成模式：将 6 维解拆解并还原为三个阶段的物理指标"""
-        results = []
-        masses = self.algo.prob.stage_masses
-        tags = ["Stage_1_Core", "Stage_2_Expand", "Stage_3_Sustain"]
-        
+    def _recover_data_integrated(self, masses, x):
+        res = []
+        tags = ["Stage_1", "Stage_2", "Stage_3"]
+
         for i in range(3):
-            rf, eu = best_x[i*2], best_x[i*2+1]
+            rf, eu = x[i*2], x[i*2+1]
             m = masses[i]
-            # 逐阶段还原
-            econ, duration = calculate_total_costs(m, eu, rf)
-            results.append({
-                "tag": tags[i],
-                "rf": rf,
-                "eu": eu,
-                "cost": econ,
-                "duration": duration
-            })
-        return results
+            
+            if self.with_env:
+                econ, duration, env = self.prob.calculate_total_costs(m, eu, rf)
+                res.append({
+                    "tag": tags[i], "rf": rf, "eu": eu, 
+                    "cost": econ, "duration": duration, "env": env
+                })
+            else:
+                econ, duration = self.prob.calculate_total_costs(m, eu, rf)
+                res.append({
+                    "tag": tags[i], "rf": rf, "eu": eu, 
+                    "cost": econ, "duration": duration, "env": 0.0
+                })
+        return res
+
+    # --- 绘图与总结 ---
+    def _plot_pareto(self, vals, run_dir, tag):
+        """
+        整合版绘图逻辑：
+        当 with_env 开启时，自动绘制 3D 全景图及三向 2D 投影图。
+        """
+        # --- 场景 1: 开启了环境指标且数据列数 >= 3 ---
+        if self.with_env and vals.shape[1] >= 3:
+            # 1. 绘制 3D 帕累托前沿图
+            fig_3d = plt.figure(figsize=(10, 8))
+            ax_3d = fig_3d.add_subplot(111, projection='3d')
+            sc = ax_3d.scatter(
+                vals[:, 0], vals[:, 1], vals[:, 2], 
+                c=vals[:, 0], cmap='viridis', s=50, alpha=0.6, edgecolors='w', linewidth=0.5
+            )
+            ax_3d.set_xlabel('Economic Cost (10k USD)', fontsize=10)
+            ax_3d.set_ylabel('Time Cost (Years)', fontsize=10)
+            ax_3d.set_zlabel('Environmental Cost', fontsize=10)
+            ax_3d.set_title(f'3D Pareto Front - {tag}', fontsize=12)
+            plt.colorbar(sc, ax=ax_3d, label='Economic Intensity', pad=0.1)
+            plt.savefig(os.path.join(run_dir, f"pareto_3d_{tag}.png"), dpi=300, bbox_inches='tight')
+            plt.close()
+
+            # 2. 绘制 2D 投影组合图 (三个视角：E-T, E-Env, T-Env)
+            fig_proj, axes = plt.subplots(1, 3, figsize=(18, 5))
+            labels_pairs = [
+                ('Economic Cost', 'Time Cost'),
+                ('Economic Cost', 'Environmental Cost'),
+                ('Time Cost', 'Environmental Cost')
+            ]
+            idx_pairs = [(0, 1), (0, 2), (1, 2)]
+            
+            for ax, (xlabel, ylabel), (xi, yi) in zip(axes, labels_pairs, idx_pairs):
+                ax.scatter(vals[:, xi], vals[:, yi], c='teal', alpha=0.6, s=40, edgecolors='k', linewidth=0.5)
+                ax.set_xlabel(xlabel, fontsize=11)
+                ax.set_ylabel(ylabel, fontsize=11)
+                ax.grid(True, linestyle='--', alpha=0.5)
+            
+            plt.suptitle(f'Pareto Projections - {tag}', fontsize=14)
+            plt.tight_layout(rect=[0, 0.03, 1, 0.95])
+            plt.savefig(os.path.join(run_dir, f"pareto_projections_{tag}.png"), dpi=300)
+            plt.close()
+
+        # --- 场景 2: 标准 2 目标模式 ---
+        else:
+            plt.figure(figsize=(8, 6))
+            plt.scatter(vals[:, 0], vals[:, 1], c='teal', alpha=0.6, edgecolors='k', s=45)
+            plt.xlabel('Economic Cost (10k USD)', fontsize=11)
+            plt.ylabel('Time Cost (Years)', fontsize=11)
+            plt.title(f"Pareto Front (2D) - {tag}", fontsize=12)
+            plt.grid(True, linestyle='--', alpha=0.5)
+            plt.savefig(os.path.join(run_dir, f"pareto_2d_{tag}.png"), dpi=300)
+            plt.close()
+            
+    def _plot_roadmap(self, x, run_dir, tag):
+        fig, ax1 = plt.subplots()
+        ax1.bar(['P1', 'P2', 'P3'], [x[0], x[2], x[4]], color='skyblue')
+        ax2 = ax1.twinx()
+        ax2.plot(['P1', 'P2', 'P3'], [x[1], x[3], x[5]], 'r-o')
+        plt.savefig(os.path.join(run_dir, f"roadmap_{tag}.png"))
+        plt.close()
+
+    def _print_summary(self, results, mode, logger):
+        logger.info("\n" + "="*85)
+        logger.info(f"{'Phase':<15} | {'Rocket Freq':<12} | {'Elev Util':<10} | {'Cost(B)':<10} | {'Years':<8} | {'Env'}")
+        logger.info("-" * 85)
+        t_c, t_t, t_e = 0, 0, 0
+        for r in results:
+            logger.info(f"{r['tag']:<15} | {r['rf']:>12.2f} | {r['eu']:>10.2%} | {r['cost']/10000:>10.2f} | {r['duration']:>8.2f} | {r['env']:>10.2e}")
+            t_c += r['cost']/10000; t_t += r['duration']; t_e += r['env']
+        logger.info("-" * 85)
+        logger.info(f"TOTAL | Cost: ${t_c:.2f}B | Time: {t_t:.1f}Y | Env: {t_e:.2e}")
+        logger.info("="*85)

@@ -1,9 +1,10 @@
 import numpy as np
 from .base_problem import BaseProblem
-from algorithm.cost import RocketCostCalculator, ElevatorCostCalculator, RocketParams, ElevatorParams
-from typing import Tuple
+from cost.cost import RocketCostCalculator, ElevatorCostCalculator
+from data.param import RocketParams, ElevatorParams
 import numpy as np
 from .base_problem import BaseProblem
+from typing import Tuple
 
 class IntegratedLunarProblem(BaseProblem):
     def __init__(self, stage_masses=[5e7, 4e7, 1e7], smooth=False):

@@ -1,39 +1,7 @@
 import numpy as np
 from dataclasses import dataclass
 from typing import Dict, Tuple
-
-# 环境参数
-G = 6.67430e-11       # 万有引力常数 (N·m²/kg²)
-M_EARTH = 5.972e24    # 地球质量 (kg)
-R_EARTH = 6.371e6     # 地球半径 (m)
-R_GEO = 4.2164e7      # 地球同步轨道半径 (m)
-p_e = 0.05            # 电费 (美元/kWh)
-J_TO_KWH = 1 / 3.6e6  # 焦耳转千瓦时
-
-
-@dataclass
-class RocketParams:
-    """火箭参数配置"""
-    C_rock: float = 1500.0                    # 每次发射成本（万美元）
-    M_rock: float = 150.0                     # 单次载荷能力（吨）
-    N_sites: int = 10                         # 发射场数量
-    N_plat: int = 10                           # 每个发射场的发射台数量
-    maintenance_cost_per_year: float = 200.0  # 年维护成本（万美元）
-    alpha: float = 0.002                         # 大量发射折扣系数
-    lambda_: float = 0.999                 # 发射价格折扣系数
-
-
-@dataclass
-class ElevatorParams:
-    """太空电梯参数配置"""
-    C_repair_per_kg: float = 500              # 单位质量维修成本（美元/千克）
-    C_labor_per_ton: float = 100.0            # 单位质量人工成本（美元/吨）
-    max_capacity_year: float = 179000.0       # 年最大运输能力（吨）
-    maintenance_cost_per_year: float = 500.0  # 年固定维护成本（万美元）
-    C_supervision_per_year: float = 300.0     # 年监管成本（万美元）
-    num_sites_elev: int = 3                   # 电梯数量
-    eta: float = 0.8                          # 电机能源利用效率
-    mu: float = 0.1                           # 每千克磨损系数
+from data.param import G, M_EARTH, R_EARTH, R_GEO, p_e, J_TO_KWH, RocketParams, ElevatorParams
 
 
 class RocketCostCalculator:

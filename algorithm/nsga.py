@@ -1,8 +1,5 @@
 import numpy as np
 import matplotlib.pyplot as plt
-import numpy as np
-
-import numpy as np
 
 class NSGA2:
     def __init__(self, problem, pop_size=100, integrated=False):

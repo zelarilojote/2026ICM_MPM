@@ -1,10 +1,10 @@
 from .base_problem import BaseProblem
 import numpy as np
-from algorithm.cost import RocketCostCalculator, ElevatorCostCalculator, RocketParams, ElevatorParams
+from cost.cost import RocketCostCalculator, ElevatorCostCalculator, RocketParams, ElevatorParams
 from typing import Tuple
 
 
-class LunarLogisticsProblem1(BaseProblem):
+class LunarLogisticsProblem(BaseProblem):
     def __init__(self, stage_mass, rocket_params=None, elevator_params=None):
         # 明确定义每个变量的上下界
         # 变量 0: 火箭频率 (1 到 365)
