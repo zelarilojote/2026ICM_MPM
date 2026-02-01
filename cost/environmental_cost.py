@@ -1,48 +1,7 @@
-"""
-EnvironmentalCost.py
-环境成本计算模块
-输入：太空电梯年利用率、火箭发射频率
-输出：总环境成本（万美元）
-与EconomicCost.py保持一致的接口
-"""
-
 import numpy as np
 from dataclasses import dataclass
 from typing import Dict, Tuple, List
-
-@dataclass
-class RocketEnvParams:
-    """火箭环境参数配置"""
-    fuel_per_launch: float = 1400.0           # 单次发射燃料消耗（吨）
-    payload_to_moon: float = 150.0           # 单次有效载荷到月球（吨）
-    co2_factor: float = 3.0                  # CO2排放因子：1kg燃料产生3kg CO2
-    fuel_cost_per_kg: float = 1.0            # 燃料环境成本（美元/千克）
-    soot_factor: float = 0.01                # 黑碳排放因子
-    soot_gwp: float = 3000.0                 # 黑碳全球变暖潜势
-    alumina_per_launch: float = 50.0         # 氧化铝排放（千克/次）
-    marine_risk_factor: float = 0.01         # 海洋污染风险因子
-    noise_factor: float = 0.1                # 噪音污染因子
-    carbon_tax_rate: float = 50.0            # 碳税（美元/吨CO2）
-    stratospheric_damage_cost: float = 1000.0  # 平流层破坏成本（美元/千克）
-    marine_cleanup_cost: float = 500.0       # 海洋清理成本（美元/吨）
-    noise_compensation: float = 1000.0       # 噪音补偿（美元/次发射）
-
-@dataclass
-class ElevatorEnvParams:
-    """太空电梯环境参数配置"""
-    specific_energy: float = 50.0            # 能耗：kWh/kg（运送1kg到GEO）
-    max_capacity_year: float = 179000.0      # 年最大运输能力（吨）
-    num_sites_elev: int = 3                  # 电梯数量
-    grid_carbon_intensity: float = 0.1       # 电网碳强度（kg CO2/kWh）
-    renewable_ratio: float = 0.8             # 可再生能源比例
-    construction_material: float = 50000.0   # 建设材料（吨）
-    material_carbon_factor: float = 2.0      # 材料碳足迹因子
-    material_recycling_rate: float = 0.9     # 材料回收率
-    land_area: float = 10.0                  # 单个银河港占地面积（平方公里）
-    land_use_cost: float = 1000.0            # 土地使用成本（美元/平方公里·年）
-    water_per_kwh: float = 1.5               # 水耗：升/kWh
-    water_cost: float = 0.5                  # 水成本（美元/立方米）
-    carbon_tax_rate: float = 50.0            # 碳税（美元/吨CO2）
+from data.param import RocketEnvParams, ElevatorEnvParams
 
 class RocketEnvCostCalculator:
     """火箭环境成本计算器"""
