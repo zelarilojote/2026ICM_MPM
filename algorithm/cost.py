@@ -31,7 +31,7 @@ class ElevatorParams:
     max_capacity_year: float = 179000.0       # 年最大运输能力（吨）
     maintenance_cost_per_year: float = 500.0  # 年固定维护成本（万美元）
     C_supervision_per_year: float = 300.0     # 年监管成本（万美元）
-    num_sites_elev: int = 3                   # 电梯数量
+    num_sites_elev: int = 3                    # 电梯数量
     eta: float = 0.8                          # 电机能源利用效率
     mu: float = 0.1                           # 每千克磨损系数
 
