@@ -1,36 +1,53 @@
-from .base_problem import BaseProblem
 import numpy as np
+from .base_problem import BaseProblem
 from algorithm.cost import RocketCostCalculator, ElevatorCostCalculator, RocketParams, ElevatorParams
 from typing import Tuple
+import numpy as np
+from .base_problem import BaseProblem
 
+class IntegratedLunarProblem(BaseProblem):
+    def __init__(self, stage_masses=[5e7, 4e7, 1e7], smooth=False):
+        # 6维决策空间: [R1, E1, R2, E2, R3, E3]
+        low = np.array([1.0, 0.05, 1.0, 0.05, 1.0, 0.05])
+        high = np.array([365.0, 1.0, 365.0, 1.0, 365.0, 1.0])
+        super().__init__(dim=6, bounds=[low, high])
+        
+        self.stage_masses = stage_masses
+        self.smooth = smooth # 是否开启平滑项开关
 
-class LunarLogisticsProblem1(BaseProblem):
-    def __init__(self, stage_mass, rocket_params=None, elevator_params=None):
-        # 明确定义每个变量的上下界
-        # 变量 0: 火箭频率 (1 到 365)
-        # 变量 1: 电梯利用率 (0.05 到 1.0)
-        self.lower_bounds = np.array([1.0, 0.05])
-        self.upper_bounds = np.array([365.0, 1.0])
-        super().__init__(dim=2, bounds=[self.lower_bounds, self.upper_bounds])
+    def evaluate(self, x):
+        total_weighted_econ = 0
+        total_weighted_time = 0
         
-        self.rocket_params = rocket_params
-        self.elevator_params = elevator_params
-        self.stage_mass = stage_mass
+        # 定义阶段权重（可根据战略需求调整）
+        weights = [
+            [0.2, 0.8], # Stage 1: 时间优先
+            [0.5, 0.5], # Stage 2: 平衡
+            [0.8, 0.2]  # Stage 3: 成本优先
+        ]
 
-    def evaluate(self, x) -> Tuple[float, float]:
-        rocket_freq = x[0]
-        elevator_util = x[1]
-        
-        econ_cost, time_cost = self.calculate_total_costs(
-            total_mass=self.stage_mass,
-            elevator_utilization=elevator_util,
-            rocket_launch_frequency=rocket_freq,
-            rocket_params=self.rocket_params,
-            elevator_params=self.elevator_params
-        )
-        
-        # NSGA2 默认最小化。如果你的时间成本是越短越好，直接返回即可。
-        return [econ_cost, time_cost]
+        # 1. 计算三个阶段的加权损耗
+        for i in range(3):
+            rf, eu = x[i*2], x[i*2+1]
+            # 计算该阶段原始物理值
+            econ, duration = self.calculate_total_costs(self.stage_masses[i], eu, rf)
+            
+            total_weighted_econ += econ * weights[i][0]
+            total_weighted_time += duration * weights[i][1]
+
+        # 2. 条件性添加平滑项 (Smoothing Penalty)
+        smoothness_penalty = 0
+        if self.smooth:
+            # 计算火箭发射频率的变动 (R2-R1, R3-R2)
+            # 使用差分的平方和作为惩罚，抑制剧烈跳变
+            freq_diffs = np.diff(x[::2]) 
+            # 乘以一个系数，使其量级与 economic_cost 匹配
+            smoothness_penalty = np.sum(freq_diffs**2) * 1e1
+
+        # 返回 NSGA-II 优化的多目标向量
+        # 目标1：综合经济损耗（含平滑惩罚）
+        # 目标2：综合时间损耗
+        return [total_weighted_econ + smoothness_penalty, total_weighted_time]
     
     def calculate_total_costs(
         self,
