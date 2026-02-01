@@ -1,0 +1,23 @@
+# 忽略 Python 自动生成的编译缓存
+__pycache__/
+*.py[cod]
+*$py.class
+
+# 忽略虚拟环境文件夹
+venv/
+.venv/
+env/
+bin/
+lib/
+
+# 忽略 logs 文件夹下的所有内容
+logs/
+
+# 忽略 IDE 配置文件
+.vscode/
+.idea/
+*.swp
+
+# 忽略临时文件
+*.tmp
+*.bak
