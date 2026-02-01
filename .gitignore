@@ -10,8 +10,10 @@ env/
 bin/
 lib/
 
-# 忽略 logs 文件夹下的所有内容
+# 忽略日志文件夹
+log/
 logs/
+*.log
 
 # 忽略 IDE 配置文件
 .vscode/
