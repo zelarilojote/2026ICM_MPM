@@ -188,12 +188,25 @@ class NSGARunner:
 
     def _print_summary(self, results, mode, logger):
         logger.info("\n" + "="*85)
-        logger.info(f"{'Phase':<15} | {'Rocket Freq':<12} | {'Elev Util':<10} | {'Cost(B)':<10} | {'Years':<8} | {'Env'}")
+        if self.with_env:
+            logger.info(f"{'Phase':<15} | {'Rocket Freq':<12} | {'Elev Util':<10} | {'Cost(B)':<10} | {'Years':<8} | {'Env'}")
+        else:
+            logger.info(f"{'Phase':<15} | {'Rocket Freq':<12} | {'Elev Util':<10} | {'Cost(B)':<10} | {'Years':<8}")
         logger.info("-" * 85)
-        t_c, t_t, t_e = 0, 0, 0
+        t_c, t_t= 0, 0
+        if self.with_env:
+            t_e = 0 
         for r in results:
-            logger.info(f"{r['tag']:<15} | {r['rf']:>12.2f} | {r['eu']:>10.2%} | {r['cost']/10000:>10.2f} | {r['duration']:>8.2f} | {r['env']:>10.2e}")
-            t_c += r['cost']/10000; t_t += r['duration']; t_e += r['env']
+            if self.with_env:
+                logger.info(f"{r['tag']:<15} | {r['rf']:>12.2f} | {r['eu']:>10.2%} | {r['cost']/10000:>10.2f} | {r['duration']:>8.2f} | {r['env']:>10.2e}")
+            else:
+                logger.info(f"{r['tag']:<15} | {r['rf']:>12.2f} | {r['eu']:>10.2%} | {r['cost']/10000:>10.2f} | {r['duration']:>8.2f}")
+            t_c += r['cost']/10000; t_t += r['duration']
+            if self.with_env:
+                t_e += r['env']
         logger.info("-" * 85)
-        logger.info(f"TOTAL | Cost: ${t_c:.2f}B | Time: {t_t:.1f}Y | Env: {t_e:.2e}")
+        if self.with_env:
+            logger.info(f"TOTAL | Cost: ${t_c:.2f}B | Time: {t_t:.1f}Y | Env: {t_e:.2e}")
+        else:
+            logger.info(f"TOTAL | Cost: ${t_c:.2f}B | Time: {t_t:.1f}Y")
         logger.info("="*85)
